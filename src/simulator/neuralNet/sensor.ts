@@ -1,0 +1,25 @@
+export enum Sensor {
+  LocationX,
+  LocationY,
+  BoundaryDistanceX,
+  BoundaryDistance,
+  BoundaryDistanceY,
+  GeneticSimilarityForward,
+  LastMoveDirectionX,
+  LastMoveDirectionY,
+  LongProbePopulationForward,
+  LongProbeBarriersForward,
+  Population,
+  PopulationForward,
+  PopulationLeftRight,
+  Oscilliator,
+  Age,
+  BarrierForward,
+  BarrierLeftRight,
+  Random,
+  Signal0,
+  Signal0Forward,
+  Signal0LeftRight,
+}
+
+export const numberOfSensors = Object.keys(Sensor).length / 2;
