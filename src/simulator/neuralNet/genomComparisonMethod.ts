@@ -1,5 +1,5 @@
 export enum GenomComparisonMethod {
-  JaroWinklerDistance,
-  HammingDistanceBits,
-  HammingDistanceBytes,
+	JaroWinklerDistance,
+	HammingDistanceBits,
+	HammingDistanceBytes,
 }

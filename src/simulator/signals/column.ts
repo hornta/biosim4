@@ -1,10 +1,10 @@
 export interface Column {
-  data: number[];
+	data: number[];
 }
 
 export const makeColumn = (numberOfRows: number) => {
-  const column: Column = {
-    data: Array(numberOfRows).fill(0),
-  };
-  return column;
+	const column: Column = {
+		data: Array(numberOfRows).fill(0),
+	};
+	return column;
 };

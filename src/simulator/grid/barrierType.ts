@@ -1,9 +1,9 @@
 export enum BarrierType {
-  None,
-  VerticalBar,
-  VerticalBarRandom,
-  FiveBlocksStaggered,
-  HorizontalBar,
-  ThreeFloatingIslands,
-  Spots,
+	None,
+	VerticalBar,
+	VerticalBarRandom,
+	FiveBlocksStaggered,
+	HorizontalBar,
+	ThreeFloatingIslands,
+	Spots,
 }

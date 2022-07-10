@@ -1,6 +1,6 @@
-import { Coord } from "./coord.js";
+import type { Coord } from "./coord.js";
 
 export interface MoveOperation {
-  individualIndex: number;
-  location: Coord;
+	individualIndex: number;
+	location: Coord;
 }

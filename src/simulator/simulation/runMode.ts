@@ -1,6 +1,6 @@
 export enum RunMode {
-  Stop,
-  Run,
-  Pause,
-  Abort,
+	Stop,
+	Run,
+	Pause,
+	Abort,
 }

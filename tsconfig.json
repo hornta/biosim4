@@ -15,7 +15,7 @@
     "downlevelIteration": false,
     "strictNullChecks": true,
     "declaration": true,
-    "declarationDir": "./"
+    "outDir": "dist"
   },
-  "include": ["./src"]
+  "include": ["./src/**/*"]
 }
