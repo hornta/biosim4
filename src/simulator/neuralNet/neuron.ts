@@ -1,4 +1,4 @@
 export interface Neuron {
-  output: number;
-  driven: boolean;
+	output: number;
+	driven: boolean;
 }

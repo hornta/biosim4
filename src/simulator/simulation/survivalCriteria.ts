@@ -1,5 +1,5 @@
 import { Challenge } from "../challenge.js";
-import { Coord } from "../coord.js";
+import { coordsAreIdentical, getCoordLength, subtractCoord } from "../coord.js";
 import { isBorder, isInBounds, isOccupiedAt } from "../grid/grid.js";
 import type { Indiv } from "../indiv.js";
 import { visitNeighbourhood } from "../indiv.js";
@@ -31,11 +31,11 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// Survivors are those inside the circular area defined by
 		// safeCenter and radius
 		case Challenge.Circle: {
-			const safeCenter = new Coord(p.sizeX / 4.0, p.sizeY / 4.0);
+			const safeCenter = { x: p.sizeX / 4.0, y: p.sizeY / 4.0 };
 			const radius = p.sizeX / 4.0;
 
-			const offset = safeCenter.subtract(indiv.location);
-			const distance = offset.length();
+			const offset = subtractCoord(safeCenter, indiv.location);
+			const distance = getCoordLength(offset);
 			return distance <= radius
 				? ([true, (radius - distance) / radius] as const)
 				: ([false, 0.0] as const);
@@ -93,11 +93,11 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// Survivors are those within the specified radius of the center. The score
 		// is linearly weighted by distance from the center.
 		case Challenge.CenterWeighted: {
-			const safeCenter = new Coord(p.sizeX / 2.0, p.sizeY / 2.0);
+			const safeCenter = { x: p.sizeX / 2.0, y: p.sizeY / 2.0 };
 			const radius = p.sizeX / 3.0;
 
-			const offset = safeCenter.subtract(indiv.location);
-			const distance = offset.length();
+			const offset = subtractCoord(safeCenter, indiv.location);
+			const distance = getCoordLength(offset);
 			return distance <= radius
 				? ([true, (radius - distance) / radius] as const)
 				: ([false, 0.0] as const);
@@ -105,11 +105,11 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 
 		// Survivors are those within the specified radius of the center
 		case Challenge.CenterUnweighted: {
-			const safeCenter = new Coord(p.sizeX / 2.0, p.sizeY / 2.0);
+			const safeCenter = { x: p.sizeX / 2.0, y: p.sizeY / 2.0 };
 			const radius = p.sizeX / 3.0;
 
-			const offset = safeCenter.subtract(indiv.location);
-			const distance = offset.length();
+			const offset = subtractCoord(safeCenter, indiv.location);
+			const distance = getCoordLength(offset);
 			return distance <= radius
 				? ([true, 1.0] as const)
 				: ([false, 0.0] as const);
@@ -119,14 +119,14 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// the specified number of neighbors in the specified inner radius.
 		// The score is not weighted by distance from the center.
 		case Challenge.CenterSparse: {
-			const safeCenter = new Coord(p.sizeX / 2.0, p.sizeY / 2.0);
+			const safeCenter = { x: p.sizeX / 2.0, y: p.sizeY / 2.0 };
 			const outerRadius = p.sizeX / 4.0;
 			const innerRadius = 1.5;
 			const minNeighbors = 5; // includes self
 			const maxNeighbors = 8;
 
-			const offset = safeCenter.subtract(indiv.location);
-			const distance = offset.length();
+			const offset = subtractCoord(safeCenter, indiv.location);
+			const distance = getCoordLength(offset);
 			if (distance <= outerRadius) {
 				let count = 0;
 
@@ -151,21 +151,27 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		case Challenge.Corner: {
 			const radius = p.sizeX / 8.0;
 
-			let distance = new Coord(0, 0).subtract(indiv.location).length();
+			let distance = getCoordLength(
+				subtractCoord({ x: 0, y: 0 }, indiv.location)
+			);
 			if (distance <= radius) {
 				return [true, 1.0] as const;
 			}
-			distance = new Coord(0, p.sizeY - 1).subtract(indiv.location).length();
+			distance = getCoordLength(
+				subtractCoord({ x: 0, y: p.sizeY - 1 }, indiv.location)
+			);
 			if (distance <= radius) {
 				return [true, 1.0] as const;
 			}
-			distance = new Coord(p.sizeX - 1, 0).subtract(indiv.location).length();
+			distance = getCoordLength(
+				subtractCoord({ x: p.sizeX - 1, y: 0 }, indiv.location)
+			);
 			if (distance <= radius) {
 				return [true, 1.0] as const;
 			}
-			distance = new Coord(p.sizeX - 1, p.sizeY - 1)
-				.subtract(indiv.location)
-				.length();
+			distance = getCoordLength(
+				subtractCoord({ x: p.sizeX - 1, y: p.sizeY - 1 }, indiv.location)
+			);
 			if (distance <= radius) {
 				return [true, 1.0] as const;
 			}
@@ -177,21 +183,27 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		case Challenge.CornerWeighted: {
 			const radius = p.sizeX / 4.0;
 
-			let distance = new Coord(0, 0).subtract(indiv.location).length();
+			let distance = getCoordLength(
+				subtractCoord({ x: 0, y: 0 }, indiv.location)
+			);
 			if (distance <= radius) {
 				return [true, (radius - distance) / radius] as const;
 			}
-			distance = new Coord(0, p.sizeY - 1).subtract(indiv.location).length();
+			distance = getCoordLength(
+				subtractCoord({ x: 0, y: p.sizeY - 1 }, indiv.location)
+			);
 			if (distance <= radius) {
 				return [true, (radius - distance) / radius] as const;
 			}
-			distance = new Coord(p.sizeX - 1, 0).subtract(indiv.location).length();
+			distance = getCoordLength(
+				subtractCoord({ x: p.sizeX - 1, y: 0 }, indiv.location)
+			);
 			if (distance <= radius) {
 				return [true, (radius - distance) / radius] as const;
 			}
-			distance = new Coord(p.sizeX - 1, p.sizeY - 1)
-				.subtract(indiv.location)
-				.length();
+			distance = getCoordLength(
+				subtractCoord({ x: p.sizeX - 1, y: p.sizeY - 1 }, indiv.location)
+			);
 			if (distance <= radius) {
 				return [true, (radius - distance) / radius] as const;
 			}
@@ -234,8 +246,9 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// Everybody survives and are candidate parents, but scored by how far
 		// they migrated from their birth location.
 		case Challenge.MigrateDistance: {
-			//unsigned requiredDistance = p.sizeX / 2.0;
-			let distance = indiv.location.subtract(indiv.birthLocation).length();
+			let distance = getCoordLength(
+				subtractCoord(indiv.location, indiv.birthLocation)
+			);
 			distance = distance / Math.max(p.sizeX, p.sizeY);
 			return [true, distance] as const;
 		}
@@ -253,7 +266,7 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 
 			let minDistance = 1e8;
 			for (const center of grid.barrierCenters) {
-				const distance = indiv.location.subtract(center).length();
+				const distance = getCoordLength(subtractCoord(indiv.location, center));
 				if (distance < minDistance) {
 					minDistance = distance;
 				}
@@ -280,9 +293,9 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 			let count = 0;
 			for (let x = indiv.location.x - 1; x <= indiv.location.x + 1; ++x) {
 				for (let y = indiv.location.y - 1; y <= indiv.location.y + 1; ++y) {
-					const tloc = new Coord(x, y);
+					const tloc = { x, y };
 					if (
-						!tloc.equals(indiv.location) &&
+						!coordsAreIdentical(tloc, indiv.location) &&
 						isInBounds(grid, tloc) &&
 						isOccupiedAt(grid, tloc)
 					) {
@@ -290,10 +303,10 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 						if (count == 1) {
 							for (let x1 = tloc.x - 1; x1 <= tloc.x + 1; ++x1) {
 								for (let y1 = tloc.y - 1; y1 <= tloc.y + 1; ++y1) {
-									const tloc1 = new Coord(x1, y1);
+									const tloc1 = { x: x1, y: y1 };
 									if (
-										!tloc1.equals(tloc) &&
-										!tloc1.equals(indiv.location) &&
+										!coordsAreIdentical(tloc1, tloc) &&
+										!coordsAreIdentical(tloc1, indiv.location) &&
 										isInBounds(grid, tloc1) &&
 										isOccupiedAt(grid, tloc1)
 									) {
@@ -340,9 +353,13 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 			const radius = p.sizeX / 4.0; // in 128^2 world, holds 804 agents
 			//float radius = p.sizeX / 5.0; // in 128^2 world, holds 514 agents
 
-			const distance = new Coord(p.sizeX - p.sizeX / 4, p.sizeY - p.sizeY / 4)
-				.subtract(indiv.location)
-				.length();
+			const distance = getCoordLength(
+				subtractCoord(
+					{ x: p.sizeX - p.sizeX / 4, y: p.sizeY - p.sizeY / 4 },
+					indiv.location
+				)
+			);
+
 			if (distance <= radius) {
 				return [true, (radius - distance) / radius] as const;
 			} else {
@@ -353,11 +370,11 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// Survivors are those inside the circular area defined by
 		// safeCenter and radius
 		case Challenge.Altruism: {
-			const safeCenter = new Coord(p.sizeX / 4.0, p.sizeY / 4.0);
+			const safeCenter = { x: p.sizeX / 4.0, y: p.sizeY / 4.0 };
 			const radius = p.sizeX / 4.0; // in a 128^2 world, holds 3216
 
-			const offset = safeCenter.subtract(indiv.location);
-			const distance = offset.length();
+			const offset = subtractCoord(safeCenter, indiv.location);
+			const distance = getCoordLength(offset);
 			return distance <= radius
 				? ([true, (radius - distance) / radius] as const)
 				: ([false, 0.0] as const);

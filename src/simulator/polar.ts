@@ -1,5 +1,5 @@
 import { Compass } from "./compass.js";
-import { normalizedCoords } from "./coord.js";
+import { multiplyCoord, normalizedCoords } from "./coord.js";
 import { Dir } from "./dir.js";
 
 const coordMags = [
@@ -39,6 +39,6 @@ export class Polar {
 		const temp = (BigInt(this.magnitude) >> 32n) ^ ((1n << 31n) - 1n);
 		length = (length + temp) / (1n << 32n);
 
-		return normalizedCoords[this.direction.dir9].multiply(Number(length));
+		return multiplyCoord(normalizedCoords[this.direction.dir9], Number(length));
 	}
 }

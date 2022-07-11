@@ -7,7 +7,7 @@ export const defaultOptions: SimulatorOptions = {
 	sizeX: 128,
 	sizeY: 128,
 	population: 3000,
-	stepsPerGeneration: 3, // 1
+	stepsPerGeneration: 300,
 	maxGenerations: 200000,
 	signalLayers: 1,
 	genomeMaxLength: 300,

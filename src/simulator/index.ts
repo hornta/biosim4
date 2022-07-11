@@ -7,6 +7,7 @@ export * from "./moveOperation.js";
 export * from "./peeps.js";
 export * from "./polar.js";
 export * from "./random.js";
+export * from "./getSensor.js";
 
 export * from "./simulation/index.js";
 export * from "./signals/index.js";

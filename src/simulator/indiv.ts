@@ -1,9 +1,14 @@
-import { Coord } from "./coord.js";
+import type { Coord } from "./coord.js";
+import {
+	addDirectionToCoord,
+	coordsAreIdentical,
+	subtractCoord,
+	subtractDirectionFromCoord,
+} from "./coord.js";
 import type { Dir } from "./dir.js";
 import { randomDirection8 } from "./dir.js";
 import type { Gene, Genome } from "./neuralNet/gene.js";
 import { SinkType, SourceType, weightAsFloat } from "./neuralNet/gene.js";
-import { genomeSimilarity } from "./neuralNet/genomCompare.js";
 import {
 	isBarrierAt,
 	isEmptyAt,
@@ -11,10 +16,11 @@ import {
 	isOccupiedAt,
 } from "./grid/grid.js";
 import type { NeuralNet } from "./neuralNet/neuralNet.js";
-import { numberOfSensors, Sensor } from "./neuralNet/sensor.js";
+import { numberOfSensors } from "./neuralNet/sensor.js";
 import { getMagnitude, SIGNAL_MAX } from "./signals/signal.js";
 import type { Simulation } from "./simulation/simulator.js";
 import { SensorAction } from "./neuralNet/sensorActions.js";
+import { sensors } from "./getSensor.js";
 
 const INITIAL_NEURON_OUTPUT = 0.5;
 
@@ -34,7 +40,7 @@ export interface Indiv {
 	simulation: Simulation;
 }
 
-const getPopulationDensityAlongAxis = (indiv: Indiv, dir: Dir) => {
+export const getPopulationDensityAlongAxis = (indiv: Indiv, dir: Dir) => {
 	let sum = 0.0;
 	const dirVec = dir.asNormalizedCoord();
 	const len = Math.sqrt(dirVec.x * dirVec.x + dirVec.y * dirVec.y);
@@ -46,10 +52,10 @@ const getPopulationDensityAlongAxis = (indiv: Indiv, dir: Dir) => {
 		radius: indiv.simulation.options.populationSensorRadius,
 		onVisit(tloc) {
 			if (
-				tloc.equals(indiv.location) &&
+				coordsAreIdentical(tloc, indiv.location) &&
 				isOccupiedAt(indiv.simulation.grid, tloc)
 			) {
-				const offset = tloc.subtract(indiv.location);
+				const offset = subtractCoord(tloc, indiv.location);
 				const proj = dirVecX * offset.x + dirVecY * offset.y; // Magnitude of projection along dir
 				const contrib = proj / (offset.x * offset.x + offset.y * offset.y);
 				sum += contrib;
@@ -68,10 +74,10 @@ const getPopulationDensityAlongAxis = (indiv: Indiv, dir: Dir) => {
 	return sensorVal;
 };
 
-const getShortProbeBarrierDistance = (indiv: Indiv, dir: Dir) => {
+export const getShortProbeBarrierDistance = (indiv: Indiv, dir: Dir) => {
 	let countFwd = 0;
 	let countRev = 0;
-	let loc = indiv.location.addDirection(dir);
+	let loc = addDirectionToCoord(indiv.location, dir);
 	let numLocsToTest = indiv.simulation.options.shortProbeBarrierDistance;
 	// Scan positive direction
 	while (
@@ -80,7 +86,7 @@ const getShortProbeBarrierDistance = (indiv: Indiv, dir: Dir) => {
 		!isBarrierAt(indiv.simulation.grid, loc)
 	) {
 		++countFwd;
-		loc = loc.addDirection(dir);
+		loc = addDirectionToCoord(loc, dir);
 		--numLocsToTest;
 	}
 	if (numLocsToTest > 0 && !isInBounds(indiv.simulation.grid, loc)) {
@@ -88,14 +94,14 @@ const getShortProbeBarrierDistance = (indiv: Indiv, dir: Dir) => {
 	}
 	// Scan negative direction
 	numLocsToTest = indiv.simulation.options.shortProbeBarrierDistance;
-	loc = indiv.location.subtractDirection(dir);
+	loc = subtractDirectionFromCoord(indiv.location, dir);
 	while (
 		numLocsToTest > 0 &&
 		isInBounds(indiv.simulation.grid, loc) &&
 		!isBarrierAt(indiv.simulation.grid, loc)
 	) {
 		++countRev;
-		loc = loc.subtractDirection(dir);
+		loc = subtractDirectionFromCoord(loc, dir);
 		--numLocsToTest;
 	}
 	if (numLocsToTest > 0 && !isInBounds(indiv.simulation.grid, loc)) {
@@ -109,7 +115,7 @@ const getShortProbeBarrierDistance = (indiv: Indiv, dir: Dir) => {
 	return sensorVal;
 };
 
-const getSignalDensity = (indiv: Indiv, layerNum: number) => {
+export const getSignalDensity = (indiv: Indiv, layerNum: number) => {
 	let countLocs = 0;
 	let sum = 0;
 	const center = indiv.location;
@@ -130,7 +136,7 @@ const getSignalDensity = (indiv: Indiv, layerNum: number) => {
 	return sensorVal;
 };
 
-const getSignalDensityAlongAxis = (
+export const getSignalDensityAlongAxis = (
 	indiv: Indiv,
 	layerNum: number,
 	dir: Dir
@@ -145,8 +151,8 @@ const getSignalDensityAlongAxis = (
 		location: indiv.location,
 		radius: indiv.simulation.options.signalSensorRadius,
 		onVisit(location) {
-			if (!location.equals(indiv.location)) {
-				const offset = location.subtract(indiv.location);
+			if (!coordsAreIdentical(location, indiv.location)) {
+				const offset = subtractCoord(location, indiv.location);
 				const proj = dirVecX * offset.x + dirVecY * offset.y; // Magnitude of projection along dir
 				const contrib =
 					(proj *
@@ -167,9 +173,9 @@ const getSignalDensityAlongAxis = (
 	return sensorVal;
 };
 
-const longProbePopulationForward = (indiv: Indiv) => {
+export const longProbePopulationForward = (indiv: Indiv) => {
 	let count = 0;
-	let loc = indiv.location.addDirection(indiv.lastMoveDirection);
+	let loc = addDirectionToCoord(indiv.location, indiv.lastMoveDirection);
 	let numLocsToTest = indiv.longProbeDistance;
 	while (
 		numLocsToTest > 0 &&
@@ -177,7 +183,7 @@ const longProbePopulationForward = (indiv: Indiv) => {
 		isEmptyAt(indiv.simulation.grid, loc)
 	) {
 		++count;
-		loc = loc.addDirection(indiv.lastMoveDirection);
+		loc = addDirectionToCoord(loc, indiv.lastMoveDirection);
 		--numLocsToTest;
 	}
 	if (
@@ -191,9 +197,9 @@ const longProbePopulationForward = (indiv: Indiv) => {
 	}
 };
 
-const longProbeBarrierForward = (indiv: Indiv) => {
+export const longProbeBarrierForward = (indiv: Indiv) => {
 	let count = 0;
-	let loc = indiv.location.addDirection(indiv.lastMoveDirection);
+	let loc = addDirectionToCoord(indiv.location, indiv.lastMoveDirection);
 	let numLocsToTest = indiv.longProbeDistance;
 	while (
 		numLocsToTest > 0 &&
@@ -201,7 +207,7 @@ const longProbeBarrierForward = (indiv: Indiv) => {
 		!isBarrierAt(indiv.simulation.grid, loc)
 	) {
 		++count;
-		loc = loc.addDirection(indiv.lastMoveDirection);
+		loc = addDirectionToCoord(loc, indiv.lastMoveDirection);
 		--numLocsToTest;
 	}
 	if (numLocsToTest > 0 && !isInBounds(indiv.simulation.grid, loc)) {
@@ -239,196 +245,9 @@ export const visitNeighbourhood = ({
 			++dy
 		) {
 			const y = location.y + dy;
-			onVisit(new Coord(x, y));
+			onVisit({ x, y });
 		}
 	}
-};
-
-export const getSensor = (
-	indiv: Indiv,
-	sensor: Sensor,
-	simulationStep: number
-) => {
-	let sensorValue = 0;
-	switch (sensor) {
-		case Sensor.Age:
-			sensorValue = indiv.age / indiv.simulation.options.stepsPerGeneration;
-			break;
-
-		case Sensor.BoundaryDistance: {
-			const distX = Math.min(
-				indiv.location.x,
-				indiv.simulation.options.sizeX - indiv.location.x - 1
-			);
-			const distY = Math.min(
-				indiv.location.y,
-				indiv.simulation.options.sizeY - indiv.location.y - 1
-			);
-			const closest = Math.min(distX, distY);
-			const maxPossible = Math.min(
-				indiv.simulation.options.sizeX / 2 - 1,
-				indiv.simulation.options.sizeY / 2 - 1
-			);
-			sensorValue = closest / maxPossible;
-			break;
-		}
-
-		case Sensor.BoundaryDistanceX: {
-			const minDistX = Math.min(
-				indiv.location.x,
-				indiv.simulation.options.sizeX - indiv.location.x - 1
-			);
-			sensorValue = minDistX / indiv.simulation.options.sizeX / 2;
-			break;
-		}
-
-		case Sensor.BoundaryDistanceY: {
-			const minDistY = Math.min(
-				indiv.location.y,
-				indiv.simulation.options.sizeY - indiv.location.y - 1
-			);
-			sensorValue = minDistY / indiv.simulation.options.sizeY / 2;
-			break;
-		}
-
-		case Sensor.LastMoveDirectionX: {
-			const lastX = indiv.lastMoveDirection.asNormalizedCoord().x;
-			sensorValue = lastX === 0 ? 0.5 : lastX === -1 ? 0 : 1;
-			break;
-		}
-
-		case Sensor.LastMoveDirectionY: {
-			const lastY = indiv.lastMoveDirection.asNormalizedCoord().y;
-			sensorValue = lastY === 0 ? 0.5 : lastY === -1 ? 0 : 1;
-			break;
-		}
-
-		case Sensor.LocationX:
-			sensorValue = indiv.location.x / (indiv.simulation.options.sizeX - 1);
-			break;
-
-		case Sensor.LocationY:
-			sensorValue = indiv.location.y / (indiv.simulation.options.sizeY - 1);
-			break;
-
-		case Sensor.Oscilliator: {
-			const phase =
-				(simulationStep % indiv.oscilliatePeriod) / indiv.oscilliatePeriod;
-			let factor = -Math.cos(phase * 2 * Math.PI);
-			factor += 1;
-			factor /= 2;
-			sensorValue = factor;
-			sensorValue = Math.min(1, Math.max(0, sensorValue));
-			break;
-		}
-
-		case Sensor.LongProbePopulationForward:
-			sensorValue = longProbePopulationForward(indiv) / indiv.longProbeDistance;
-			break;
-
-		case Sensor.LongProbeBarriersForward:
-			sensorValue = longProbeBarrierForward(indiv) / indiv.longProbeDistance;
-			break;
-
-		case Sensor.Population: {
-			let countLocations = 0;
-			let countOccupied = 0;
-			const center = indiv.location;
-
-			visitNeighbourhood({
-				location: center,
-				radius: indiv.simulation.options.populationSensorRadius,
-				gridWidth: indiv.simulation.options.sizeX,
-				gridHeight: indiv.simulation.options.sizeY,
-				onVisit: (location) => {
-					++countLocations;
-					if (isOccupiedAt(indiv.simulation.grid, location)) {
-						++countOccupied;
-					}
-				},
-			});
-			sensorValue = countOccupied / countLocations;
-			break;
-		}
-
-		case Sensor.PopulationForward:
-			sensorValue = getPopulationDensityAlongAxis(
-				indiv,
-				indiv.lastMoveDirection
-			);
-			break;
-
-		case Sensor.PopulationLeftRight:
-			sensorValue = getPopulationDensityAlongAxis(
-				indiv,
-				indiv.lastMoveDirection.rotate90DegreesClockWise()
-			);
-			break;
-
-		case Sensor.BarrierForward:
-			sensorValue = getShortProbeBarrierDistance(
-				indiv,
-				indiv.lastMoveDirection
-			);
-			break;
-
-		case Sensor.BarrierLeftRight:
-			sensorValue = getShortProbeBarrierDistance(
-				indiv,
-				indiv.lastMoveDirection.rotate90DegreesClockWise()
-			);
-			break;
-
-		case Sensor.Random:
-			sensorValue = indiv.simulation.random.next();
-			break;
-
-		case Sensor.Signal0:
-			sensorValue = getSignalDensity(indiv, 0);
-			break;
-
-		case Sensor.Signal0Forward:
-			sensorValue = getSignalDensityAlongAxis(
-				indiv,
-				0,
-				indiv.lastMoveDirection
-			);
-			break;
-
-		case Sensor.Signal0LeftRight:
-			sensorValue = getSignalDensityAlongAxis(
-				indiv,
-				0,
-				indiv.lastMoveDirection.rotate90DegreesClockWise()
-			);
-			break;
-
-		case Sensor.GeneticSimilarityForward: {
-			const loc2 = indiv.location.addDirection(indiv.lastMoveDirection);
-			if (
-				isInBounds(indiv.simulation.grid, loc2) &&
-				isOccupiedAt(indiv.simulation.grid, loc2)
-			) {
-				const indiv2 =
-					indiv.simulation.peeps.individuals[
-						indiv.simulation.grid.data[loc2.x].data[loc2.y]
-					];
-				if (indiv2.alive) {
-					sensorValue = genomeSimilarity(
-						indiv.simulation.options.genomeComparisonMethod,
-						indiv.genome,
-						indiv2.genome
-					); // 0.0..1.0
-				}
-			}
-			break;
-		}
-
-		default:
-			throw new Error("Missing implementation of sensor: " + sensor);
-	}
-
-	return sensorValue;
 };
 
 interface Node {
@@ -653,7 +472,7 @@ export const feedForward = (indiv: Indiv, simulationStep: number) => {
 
 		let inputVal: number;
 		if (connection.sourceType === SourceType.Sensor) {
-			inputVal = getSensor(indiv, connection.sourceNum, simulationStep);
+			inputVal = sensors[connection.sourceNum](indiv, simulationStep);
 		} else {
 			inputVal = indiv.neuralNet.neurons[connection.sourceNum].output;
 		}

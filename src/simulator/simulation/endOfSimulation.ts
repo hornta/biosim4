@@ -1,4 +1,5 @@
 import { Challenge } from "../challenge.js";
+import { getCoordLength, subtractCoord } from "../coord.js";
 import { drainDeathQueue, drainMoveQueue, queueForDeath } from "../peeps.js";
 import { RANDOM_UINT_MAX } from "../random.js";
 import { fadeSignal } from "../signals/signal.js";
@@ -56,9 +57,9 @@ export const handleEndOfSimulation = (
 				const bit = 1 << n;
 				if ((indiv.challengeBits & bit) == 0) {
 					if (
-						indiv.location
-							.subtract(simulation.grid.barrierCenters[n])
-							.length() <= radius
+						getCoordLength(
+							subtractCoord(indiv.location, simulation.grid.barrierCenters[n])
+						) <= radius
 					) {
 						indiv.challengeBits |= bit;
 					}

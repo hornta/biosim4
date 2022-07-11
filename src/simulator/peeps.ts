@@ -1,4 +1,5 @@
 import type { Coord } from "./coord.js";
+import { coordAsDirection, subtractCoord } from "./coord.js";
 import { isEmptyAt } from "./grid/grid.js";
 import type { Indiv } from "./indiv.js";
 import type { MoveOperation } from "./moveOperation.js";
@@ -41,7 +42,9 @@ export const drainMoveQueue = (peeps: Peeps) => {
 		const indiv = peeps.individuals[moveOperation.individualIndex];
 		if (indiv.alive) {
 			const newLocation = moveOperation.location;
-			const moveDirection = newLocation.subtract(indiv.location).asDir();
+			const moveDirection = coordAsDirection(
+				subtractCoord(newLocation, indiv.location)
+			);
 			if (isEmptyAt(indiv.simulation.grid, newLocation)) {
 				indiv.simulation.grid.data[indiv.location.x].data[indiv.location.y] = 0;
 				indiv.simulation.grid.data[newLocation.x].data[newLocation.y] =

@@ -1,5 +1,5 @@
 import type { Random } from "@hornta/random";
-import { Coord } from "../coord.js";
+import { addCoord, addDirectionToCoord } from "../coord.js";
 import { randomDirection8 } from "../dir.js";
 import { isEmptyAt, isInBounds, isOccupiedAt } from "../grid/grid.js";
 import type { Indiv } from "../indiv.js";
@@ -85,7 +85,10 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 		level = (Math.tanh(level) + 1.0) / 2.0; // convert to 0.0..1.0
 		level *= responsivenessAdjusted;
 		if (level > killThreshold && prob2bool(indiv.simulation.random, level)) {
-			const otherLoc = indiv.location.addDirection(indiv.lastMoveDirection);
+			const otherLoc = addDirectionToCoord(
+				indiv.location,
+				indiv.lastMoveDirection
+			);
 			if (
 				isInBounds(indiv.simulation.grid, otherLoc) &&
 				isOccupiedAt(indiv.simulation.grid, otherLoc)
@@ -197,13 +200,13 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 	const signumY = moveY < 0.0 ? -1 : 1;
 
 	// Generate a normalized movement offset, where each component is -1, 0, or 1
-	const movementOffset = new Coord(
-		Number(probX) * signumX,
-		Number(probY) * signumY
-	);
+	const movementOffset = {
+		x: Number(probX) * signumX,
+		y: Number(probY) * signumY,
+	};
 
 	// Move there if it's a valid location
-	const newLoc = indiv.location.add(movementOffset);
+	const newLoc = addCoord(indiv.location, movementOffset);
 	if (
 		isInBounds(indiv.simulation.grid, newLoc) &&
 		isEmptyAt(indiv.simulation.grid, newLoc)

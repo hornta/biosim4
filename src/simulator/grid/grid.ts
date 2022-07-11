@@ -1,5 +1,5 @@
 import type { Random } from "@hornta/random";
-import { Coord } from "../coord.js";
+import type { Coord } from "../coord.js";
 import { getRandomInt } from "../random.js";
 
 const EMPTY = 0;
@@ -61,7 +61,7 @@ export const isBorder = (grid: Grid, location: Coord) => {
 };
 
 export const findEmptyLocation = (random: Random, grid: Grid) => {
-	const location = new Coord();
+	const location = { x: 0, y: 0 };
 
 	while (true) {
 		location.x = getRandomInt(random, 0, grid.data.length - 1);

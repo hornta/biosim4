@@ -1,5 +1,6 @@
 import { BarrierType } from "./barrierType.js";
-import { Coord } from "../coord.js";
+import type { Coord } from "../coord.js";
+import { getCoordLength, subtractCoord } from "../coord.js";
 import { BARRIER } from "./grid.js";
 import { visitNeighbourhood } from "../indiv.js";
 import { getRandomInt } from "../random.js";
@@ -13,7 +14,7 @@ export const createBarrier = (simulation: Simulation) => {
 		for (let x = minX; x <= maxX; ++x) {
 			for (let y = minY; y <= maxY; ++y) {
 				simulation.grid.data[x].data[y] = BARRIER;
-				simulation.grid.barrierLocations.push(new Coord(x, y));
+				simulation.grid.barrierLocations.push({ x, y });
 			}
 		}
 	};
@@ -31,7 +32,7 @@ export const createBarrier = (simulation: Simulation) => {
 			for (let x = minX; x <= maxX; ++x) {
 				for (let y = minY; y <= maxY; ++y) {
 					simulation.grid.data[x].data[y] = BARRIER;
-					simulation.grid.barrierLocations.push(new Coord(x, y));
+					simulation.grid.barrierLocations.push({ x, y });
 				}
 			}
 			break;
@@ -45,10 +46,10 @@ export const createBarrier = (simulation: Simulation) => {
 				simulation.options.sizeY / (numberOfLocations + 1);
 
 			for (let n = 1; n <= numberOfLocations; ++n) {
-				const loc = new Coord(
-					simulation.options.sizeX / 2,
-					n * verticalSliceSize
-				);
+				const loc = {
+					x: simulation.options.sizeX / 2,
+					y: n * verticalSliceSize,
+				};
 				visitNeighbourhood({
 					location: loc,
 					radius,
@@ -69,18 +70,18 @@ export const createBarrier = (simulation: Simulation) => {
 			const margin = 2 * radius;
 
 			const randomLoc = () => {
-				return new Coord(
-					getRandomInt(
+				return {
+					x: getRandomInt(
 						simulation.random,
 						margin,
 						simulation.options.sizeX - margin
 					),
-					getRandomInt(
+					y: getRandomInt(
 						simulation.random,
 						margin,
 						simulation.options.sizeY - margin
-					)
-				);
+					),
+				};
 			};
 
 			const center0 = randomLoc();
@@ -89,13 +90,13 @@ export const createBarrier = (simulation: Simulation) => {
 
 			do {
 				center1 = randomLoc();
-			} while (center0.subtract(center1).length() < margin);
+			} while (getCoordLength(subtractCoord(center0, center1)) < margin);
 
 			do {
 				center2 = randomLoc();
 			} while (
-				center0.subtract(center2).length() < margin ||
-				center1.subtract(center2).length() < margin
+				getCoordLength(subtractCoord(center0, center2)) < margin ||
+				getCoordLength(subtractCoord(center1, center2)) < margin
 			);
 
 			simulation.grid.barrierCenters.push(center0);
@@ -121,7 +122,7 @@ export const createBarrier = (simulation: Simulation) => {
 			for (let x = minX; x <= maxX; ++x) {
 				for (let y = minY; y <= maxY; ++y) {
 					simulation.grid.data[x].data[y] = BARRIER;
-					simulation.grid.barrierLocations.push(new Coord(x, y));
+					simulation.grid.barrierLocations.push({ x, y });
 				}
 			}
 			break;
@@ -140,7 +141,7 @@ export const createBarrier = (simulation: Simulation) => {
 			for (let x = minX; x <= maxX; ++x) {
 				for (let y = minY; y <= maxY; ++y) {
 					simulation.grid.data[x].data[y] = BARRIER;
-					simulation.grid.barrierLocations.push(new Coord(x, y));
+					simulation.grid.barrierLocations.push({ x, y });
 				}
 			}
 			break;
