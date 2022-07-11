@@ -6,6 +6,7 @@ import {
 	subtractDirectionFromCoord,
 } from "./coord.js";
 import type { Dir } from "./dir.js";
+import { directionAsNormalizedCoord } from "./dir.js";
 import { randomDirection8 } from "./dir.js";
 import type { Gene, Genome } from "./neuralNet/gene.js";
 import { SinkType, SourceType, weightAsFloat } from "./neuralNet/gene.js";
@@ -42,7 +43,7 @@ export interface Indiv {
 
 export const getPopulationDensityAlongAxis = (indiv: Indiv, dir: Dir) => {
 	let sum = 0.0;
-	const dirVec = dir.asNormalizedCoord();
+	const dirVec = directionAsNormalizedCoord(dir);
 	const len = Math.sqrt(dirVec.x * dirVec.x + dirVec.y * dirVec.y);
 	const dirVecX = dirVec.x / len;
 	const dirVecY = dirVec.y / len; // Unit vector components along dir
@@ -142,7 +143,7 @@ export const getSignalDensityAlongAxis = (
 	dir: Dir
 ) => {
 	let sum = 0.0;
-	const dirVec = dir.asNormalizedCoord();
+	const dirVec = directionAsNormalizedCoord(dir);
 	const len = Math.sqrt(dirVec.x * dirVec.x + dirVec.y * dirVec.y);
 	const dirVecX = dirVec.x / len;
 	const dirVecY = dirVec.y / len; // Unit vector components along dir

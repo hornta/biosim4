@@ -1,6 +1,11 @@
 import type { Random } from "@hornta/random";
 import { addCoord, addDirectionToCoord } from "../coord.js";
-import { randomDirection8 } from "../dir.js";
+import {
+	directionAsNormalizedCoord,
+	randomDirection8,
+	rotate90DegreesClockWise,
+	rotate90DegreesCounterClockWise,
+} from "../dir.js";
 import { isEmptyAt, isInBounds, isOccupiedAt } from "../grid/grid.js";
 import type { Indiv } from "../indiv.js";
 import { queueForDeath, queueForMove } from "../peeps.js";
@@ -122,7 +127,7 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 
 	let level;
 	let offset;
-	const lastMoveOffset = indiv.lastMoveDirection.asNormalizedCoord();
+	const lastMoveOffset = directionAsNormalizedCoord(indiv.lastMoveDirection);
 
 	// moveX,moveY will be the accumulators that will hold the sum of all the
 	// urges to move along each axis. (+- floating values of arbitrary range)
@@ -154,32 +159,34 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 	}
 	if (isEnabled(SensorAction.MoveLeft)) {
 		level = actionLevels[SensorAction.MoveLeft];
-		offset = indiv.lastMoveDirection
-			.rotate90DegreesCounterClockWise()
-			.asNormalizedCoord();
+		offset = directionAsNormalizedCoord(
+			rotate90DegreesCounterClockWise(indiv.lastMoveDirection)
+		);
 		moveX += offset.x * level;
 		moveY += offset.y * level;
 	}
 	if (isEnabled(SensorAction.MoveRight)) {
 		level = actionLevels[SensorAction.MoveRight];
-		offset = indiv.lastMoveDirection
-			.rotate90DegreesClockWise()
-			.asNormalizedCoord();
+		offset = directionAsNormalizedCoord(
+			rotate90DegreesClockWise(indiv.lastMoveDirection)
+		);
 		moveX += offset.x * level;
 		moveY += offset.y * level;
 	}
 	if (isEnabled(SensorAction.MoveRightLeft)) {
 		level = actionLevels[SensorAction.MoveRightLeft];
-		offset = indiv.lastMoveDirection
-			.rotate90DegreesClockWise()
-			.asNormalizedCoord();
+		offset = directionAsNormalizedCoord(
+			rotate90DegreesClockWise(indiv.lastMoveDirection)
+		);
 		moveX += offset.x * level;
 		moveY += offset.y * level;
 	}
 
 	if (isEnabled(SensorAction.MoveRandom)) {
 		level = actionLevels[SensorAction.MoveRandom];
-		offset = randomDirection8(indiv.simulation.random).asNormalizedCoord();
+		offset = directionAsNormalizedCoord(
+			randomDirection8(indiv.simulation.random)
+		);
 		moveX += offset.x * level;
 		moveY += offset.y * level;
 	}

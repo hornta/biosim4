@@ -3,109 +3,99 @@ import { Compass } from "./compass.js";
 import { normalizedCoords } from "./coord.js";
 import { getRandomInt } from "./random.js";
 
-export class Dir {
-	dir9: Compass;
+export type Dir = Compass;
 
-	constructor(dir: Compass) {
-		this.dir9 = dir;
-	}
+export const directionAsNormalizedCoord = (direction: Dir) => {
+	return normalizedCoords[direction];
+};
 
-	asNormalizedCoord() {
-		return normalizedCoords[this.dir9];
-	}
+const rotate = (direction: Dir, n: number) => {
+	return rotations[direction * 8 + (n & 7)];
+};
 
-	rotate90DegreesClockWise() {
-		return this.rotate(2);
-	}
+export const rotate90DegreesClockWise = (direction: Dir) => {
+	return rotate(direction, 2);
+};
 
-	rotate90DegreesCounterClockWise() {
-		return this.rotate(-2);
-	}
-
-	rotate180Degrees() {
-		return this.rotate(4);
-	}
-
-	rotate(n: number) {
-		return rotations[this.dir9 * 8 + (n & 7)];
-	}
-}
+export const rotate90DegreesCounterClockWise = (direction: Dir) => {
+	return rotate(direction, -2);
+};
 
 export const randomDirection8 = (random: Random) => {
-	return new Dir(Compass.North).rotate(getRandomInt(random, 0, 7));
+	return rotate(Compass.North, getRandomInt(random, 0, 7));
 };
 
 const rotations = [
-	new Dir(Compass.SouthWest),
-	new Dir(Compass.West),
-	new Dir(Compass.NorthWest),
-	new Dir(Compass.North),
-	new Dir(Compass.NorthEast),
-	new Dir(Compass.East),
-	new Dir(Compass.SouthEast),
-	new Dir(Compass.South),
-	new Dir(Compass.South),
-	new Dir(Compass.SouthWest),
-	new Dir(Compass.West),
-	new Dir(Compass.NorthWest),
-	new Dir(Compass.North),
-	new Dir(Compass.NorthEast),
-	new Dir(Compass.East),
-	new Dir(Compass.SouthEast),
-	new Dir(Compass.SouthEast),
-	new Dir(Compass.South),
-	new Dir(Compass.SouthWest),
-	new Dir(Compass.West),
-	new Dir(Compass.NorthWest),
-	new Dir(Compass.North),
-	new Dir(Compass.NorthEast),
-	new Dir(Compass.East),
-	new Dir(Compass.West),
-	new Dir(Compass.NorthWest),
-	new Dir(Compass.North),
-	new Dir(Compass.NorthEast),
-	new Dir(Compass.East),
-	new Dir(Compass.SouthEast),
-	new Dir(Compass.South),
-	new Dir(Compass.SouthWest),
-	new Dir(Compass.Center),
-	new Dir(Compass.Center),
-	new Dir(Compass.Center),
-	new Dir(Compass.Center),
-	new Dir(Compass.Center),
-	new Dir(Compass.Center),
-	new Dir(Compass.Center),
-	new Dir(Compass.Center),
-	new Dir(Compass.East),
-	new Dir(Compass.SouthEast),
-	new Dir(Compass.South),
-	new Dir(Compass.SouthWest),
-	new Dir(Compass.West),
-	new Dir(Compass.NorthWest),
-	new Dir(Compass.North),
-	new Dir(Compass.NorthEast),
-	new Dir(Compass.NorthWest),
-	new Dir(Compass.North),
-	new Dir(Compass.NorthEast),
-	new Dir(Compass.East),
-	new Dir(Compass.SouthEast),
-	new Dir(Compass.South),
-	new Dir(Compass.SouthWest),
-	new Dir(Compass.West),
-	new Dir(Compass.North),
-	new Dir(Compass.NorthEast),
-	new Dir(Compass.East),
-	new Dir(Compass.SouthEast),
-	new Dir(Compass.South),
-	new Dir(Compass.SouthWest),
-	new Dir(Compass.West),
-	new Dir(Compass.NorthWest),
-	new Dir(Compass.NorthEast),
-	new Dir(Compass.East),
-	new Dir(Compass.SouthEast),
-	new Dir(Compass.South),
-	new Dir(Compass.SouthWest),
-	new Dir(Compass.West),
-	new Dir(Compass.NorthWest),
-	new Dir(Compass.North),
+	Compass.SouthWest,
+	Compass.West,
+	Compass.NorthWest,
+	Compass.North,
+	Compass.NorthEast,
+	Compass.East,
+	Compass.SouthEast,
+	Compass.South,
+	Compass.South,
+	Compass.SouthWest,
+	Compass.West,
+	Compass.NorthWest,
+	Compass.North,
+	Compass.NorthEast,
+	Compass.East,
+	Compass.SouthEast,
+	Compass.SouthEast,
+	Compass.South,
+	Compass.SouthWest,
+	Compass.West,
+	Compass.NorthWest,
+	Compass.North,
+	Compass.NorthEast,
+	Compass.East,
+	Compass.West,
+	Compass.NorthWest,
+	Compass.North,
+	Compass.NorthEast,
+	Compass.East,
+	Compass.SouthEast,
+	Compass.South,
+	Compass.SouthWest,
+	Compass.Center,
+	Compass.Center,
+	Compass.Center,
+	Compass.Center,
+	Compass.Center,
+	Compass.Center,
+	Compass.Center,
+	Compass.Center,
+	Compass.East,
+	Compass.SouthEast,
+	Compass.South,
+	Compass.SouthWest,
+	Compass.West,
+	Compass.NorthWest,
+	Compass.North,
+	Compass.NorthEast,
+	Compass.NorthWest,
+	Compass.North,
+	Compass.NorthEast,
+	Compass.East,
+	Compass.SouthEast,
+	Compass.South,
+	Compass.SouthWest,
+	Compass.West,
+	Compass.North,
+	Compass.NorthEast,
+	Compass.East,
+	Compass.SouthEast,
+	Compass.South,
+	Compass.SouthWest,
+	Compass.West,
+	Compass.NorthWest,
+	Compass.NorthEast,
+	Compass.East,
+	Compass.SouthEast,
+	Compass.South,
+	Compass.SouthWest,
+	Compass.West,
+	Compass.NorthWest,
+	Compass.North,
 ] as const;

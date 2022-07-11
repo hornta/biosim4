@@ -5,7 +5,6 @@ export * from "./dir.js";
 export * from "./indiv.js";
 export * from "./moveOperation.js";
 export * from "./peeps.js";
-export * from "./polar.js";
 export * from "./random.js";
 export * from "./getSensor.js";
 

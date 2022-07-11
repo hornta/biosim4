@@ -6,3 +6,4 @@ export * from "./simulator.js";
 export * from "./simulatorOptions.js";
 export * from "./spawnNewGeneration.js";
 export * from "./survivalCriteria.js";
+export * from "./startSimulation.js";

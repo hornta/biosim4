@@ -1,5 +1,12 @@
 import { addDirectionToCoord } from "./coord.js";
-import { genomeSimilarity, isInBounds, isOccupiedAt, Sensor } from "./index.js";
+import {
+	directionAsNormalizedCoord,
+	genomeSimilarity,
+	isInBounds,
+	isOccupiedAt,
+	rotate90DegreesClockWise,
+	Sensor,
+} from "./index.js";
 import type { Indiv } from "./indiv.js";
 import {
 	getPopulationDensityAlongAxis,
@@ -49,11 +56,11 @@ export const sensors: Record<
 		return minDistY / indiv.simulation.options.sizeY / 2;
 	},
 	[Sensor.LastMoveDirectionX]: function lastMoveDirectionXSensor(indiv) {
-		const lastX = indiv.lastMoveDirection.asNormalizedCoord().x;
+		const lastX = directionAsNormalizedCoord(indiv.lastMoveDirection).x;
 		return lastX === 0 ? 0.5 : lastX === -1 ? 0 : 1;
 	},
 	[Sensor.LastMoveDirectionY]: function lastMoveDirectionYSensor(indiv) {
-		const lastY = indiv.lastMoveDirection.asNormalizedCoord().y;
+		const lastY = directionAsNormalizedCoord(indiv.lastMoveDirection).y;
 		return lastY === 0 ? 0.5 : lastY === -1 ? 0 : 1;
 	},
 	[Sensor.LocationX]: function locationXSensor(indiv) {
@@ -101,7 +108,7 @@ export const sensors: Record<
 	[Sensor.PopulationLeftRight]: (indiv) => {
 		return getPopulationDensityAlongAxis(
 			indiv,
-			indiv.lastMoveDirection.rotate90DegreesClockWise()
+			rotate90DegreesClockWise(indiv.lastMoveDirection)
 		);
 	},
 	[Sensor.BarrierForward]: (indiv) => {
@@ -110,7 +117,7 @@ export const sensors: Record<
 	[Sensor.BarrierLeftRight]: (indiv) => {
 		return getShortProbeBarrierDistance(
 			indiv,
-			indiv.lastMoveDirection.rotate90DegreesClockWise()
+			rotate90DegreesClockWise(indiv.lastMoveDirection)
 		);
 	},
 	[Sensor.Random]: (indiv) => {
@@ -126,7 +133,7 @@ export const sensors: Record<
 		return getSignalDensityAlongAxis(
 			indiv,
 			0,
-			indiv.lastMoveDirection.rotate90DegreesClockWise()
+			rotate90DegreesClockWise(indiv.lastMoveDirection)
 		);
 	},
 	[Sensor.GeneticSimilarityForward]: (indiv) => {

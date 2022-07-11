@@ -1,26 +1,26 @@
 import { Compass } from "./compass.js";
-import { Dir } from "./dir.js";
-import { Polar } from "./polar.js";
+import type { Dir } from "./dir.js";
+import { directionAsNormalizedCoord } from "./dir.js";
 
 const tanN = 13860;
 const tanD = 33461;
 const conversion = [
-	new Dir(Compass.South),
-	new Dir(Compass.Center),
-	new Dir(Compass.SouthWest),
-	new Dir(Compass.North),
-	new Dir(Compass.SouthEast),
-	new Dir(Compass.East),
-	new Dir(Compass.North),
-	new Dir(Compass.North),
-	new Dir(Compass.North),
-	new Dir(Compass.North),
-	new Dir(Compass.West),
-	new Dir(Compass.NorthWest),
-	new Dir(Compass.North),
-	new Dir(Compass.NorthEast),
-	new Dir(Compass.North),
-	new Dir(Compass.North),
+	Compass.South,
+	Compass.Center,
+	Compass.SouthWest,
+	Compass.North,
+	Compass.SouthEast,
+	Compass.East,
+	Compass.North,
+	Compass.North,
+	Compass.North,
+	Compass.North,
+	Compass.West,
+	Compass.NorthWest,
+	Compass.North,
+	Compass.NorthEast,
+	Compass.North,
+	Compass.North,
 ] as const;
 
 export interface Coord {
@@ -49,11 +49,7 @@ export const coordAsDirection = (coord: Coord) => {
 };
 
 export const normalizeCoord = (coord: Coord) => {
-	return coordAsDirection(coord).asNormalizedCoord();
-};
-
-export const coordAsPolar = (coord: Coord) => {
-	return new Polar(getCoordLength(coord), coordAsDirection(coord));
+	return directionAsNormalizedCoord(coordAsDirection(coord));
 };
 
 export const multiplyCoord = (coord: Coord, scalar: number) => {
@@ -73,11 +69,11 @@ export const coordsAreIdentical = (coord: Coord, other: Coord) => {
 };
 
 export const addDirectionToCoord = (coord: Coord, direction: Dir) => {
-	return addCoord(coord, direction.asNormalizedCoord());
+	return addCoord(coord, directionAsNormalizedCoord(direction));
 };
 
 export const subtractDirectionFromCoord = (coord: Coord, direction: Dir) => {
-	return subtractCoord(coord, direction.asNormalizedCoord());
+	return subtractCoord(coord, directionAsNormalizedCoord(direction));
 };
 
 export const raySameness = (coord: Coord, other: Coord) => {
@@ -92,7 +88,7 @@ export const raySameness = (coord: Coord, other: Coord) => {
 };
 
 export const raySamenessDirection = (coord: Coord, direction: Dir) => {
-	return raySameness(coord, direction.asNormalizedCoord());
+	return raySameness(coord, directionAsNormalizedCoord(direction));
 };
 
 export const normalizedCoords: Coord[] = [
