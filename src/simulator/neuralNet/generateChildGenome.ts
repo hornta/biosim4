@@ -2,7 +2,6 @@ import type { Genome } from "./gene.js";
 import { makeRandomGenome } from "./gene.js";
 import { getRandomInt, RANDOM_UINT_MAX } from "../random.js";
 import type { Simulation } from "../simulation/simulator.js";
-import assert from "assert";
 
 const randomBitFlip = (simulation: Simulation, genome: Genome) => {
 	const elementIndex = getRandomInt(simulation.random, 0, genome.length - 1);

@@ -14,7 +14,6 @@ import type { NeuralNet } from "./neuralNet/neuralNet.js";
 import { numberOfSensors, Sensor } from "./neuralNet/sensor.js";
 import { getMagnitude, SIGNAL_MAX } from "./signals/signal.js";
 import type { Simulation } from "./simulation/simulator.js";
-import assert from "assert";
 import { SensorAction } from "./neuralNet/sensorActions.js";
 
 const INITIAL_NEURON_OUTPUT = 0.5;
@@ -480,7 +479,6 @@ const makeNodeList = (
 		if (conn.sinkType === SinkType.Neuron) {
 			let it = nodeMap[conn.sinkNum];
 			if (it === undefined) {
-				assert.ok(conn.sinkNum < simulation.options.maxNumberNeurons);
 				it = {
 					numOutputs: 0,
 					numSelfInputs: 0,
@@ -502,8 +500,6 @@ const makeNodeList = (
 		if (conn.sourceType == SourceType.Neuron) {
 			let it: Node = nodeMap[conn.sourceNum];
 			if (it === undefined) {
-				assert.ok(conn.sourceNum < simulation.options.maxNumberNeurons);
-
 				it = {
 					numInputsFromSensorsOrOtherNeurons: 0,
 					numOutputs: 0,
