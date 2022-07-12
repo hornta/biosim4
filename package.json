@@ -7,7 +7,9 @@
 	},
 	"type": "module",
 	"scripts": {
-		"start": "npx ts-node --esm ./src_ts/main.ts"
+		"build": "tsc",
+		"test": "vitest",
+		"lint": "eslint ."
 	},
 	"devDependencies": {
 		"@types/assert": "^1.5.6",

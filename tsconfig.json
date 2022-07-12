@@ -1,21 +1,21 @@
 {
-  "compilerOptions": {
-    "target": "ES2022" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
-    "module": "ESNext" /* Specify what module code is generated. */,
-    "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
-    "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
-    "strict": true,
-    "skipLibCheck": true,
-    "moduleResolution": "node16",
-    "allowUnreachableCode": false,
-    "allowUmdGlobalAccess": false,
-    "allowJs": false,
-    "allowUnusedLabels": false,
-    "allowSyntheticDefaultImports": true,
-    "downlevelIteration": false,
-    "strictNullChecks": true,
-    "declaration": true,
-    "outDir": "dist"
-  },
-  "include": ["./src/**/*"]
+	"compilerOptions": {
+		"target": "ES2022" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
+		"module": "ESNext" /* Specify what module code is generated. */,
+		"esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
+		"forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
+		"strict": true,
+		"skipLibCheck": true,
+		"moduleResolution": "node16",
+		"allowUnreachableCode": false,
+		"allowUmdGlobalAccess": false,
+		"allowJs": false,
+		"allowUnusedLabels": false,
+		"allowSyntheticDefaultImports": true,
+		"downlevelIteration": false,
+		"strictNullChecks": true,
+		"declaration": true,
+		"outDir": "dist"
+	},
+	"include": ["./src"]
 }

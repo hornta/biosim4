@@ -5,8 +5,8 @@ import {
 	isInBounds,
 	isOccupiedAt,
 	rotate90DegreesClockWise,
-	Sensor,
 } from "./index.js";
+import { Sensor } from "./neuralNet/index.js";
 import type { Indiv } from "./indiv.js";
 import {
 	getPopulationDensityAlongAxis,
