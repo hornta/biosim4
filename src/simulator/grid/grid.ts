@@ -10,44 +10,39 @@ export interface GridColumn {
 }
 
 export interface Grid {
-	data: GridColumn[];
+	data: Uint16Array;
 	barrierLocations: Coord[];
-	barrierCenters: Coord[];
+	numBarrierCenters: number;
+	barrierCenters: Uint16Array;
+	width: number;
+	height: number;
 }
 
-const initGrid = (grid: Grid, width: number, height: number) => {
-	grid.data = Array.from({ length: width }).map(() => {
-		return { data: Array(height).fill(0) };
-	});
-};
-
 export const resetGrid = (grid: Grid) => {
-	for (const column of grid.data) {
-		column.data.fill(0);
-	}
+	grid.data.fill(0);
 };
 
 export const isInBounds = (grid: Grid, location: Coord) => {
 	return (
 		location.x >= 0 &&
 		location.y >= 0 &&
-		location.x < grid.data.length &&
-		location.y < grid.data[0].data.length
+		location.x < grid.width &&
+		location.y < grid.height
 	);
 };
 
 export const isEmptyAt = (grid: Grid, location: Coord) => {
-	return grid.data[location.x].data[location.y] === EMPTY;
+	return grid.data[location.x * grid.width + location.y] === EMPTY;
 };
 
 export const isBarrierAt = (grid: Grid, location: Coord) => {
-	return grid.data[location.x].data[location.y] === BARRIER;
+	return grid.data[location.x * grid.width + location.y] === BARRIER;
 };
 
 export const isOccupiedAt = (grid: Grid, location: Coord) => {
 	return (
-		grid.data[location.x].data[location.y] !== EMPTY &&
-		grid.data[location.x].data[location.y] !== BARRIER
+		grid.data[location.x * grid.width + location.y] !== EMPTY &&
+		grid.data[location.x * grid.width + location.y] !== BARRIER
 	);
 };
 
@@ -55,8 +50,8 @@ export const isBorder = (grid: Grid, location: Coord) => {
 	return (
 		location.x === 0 ||
 		location.y === 0 ||
-		location.x === grid.data.length - 1 ||
-		location.y === grid.data[0].data.length - 1
+		location.x === grid.width - 1 ||
+		location.y === grid.height - 1
 	);
 };
 
@@ -64,8 +59,8 @@ export const findEmptyLocation = (random: Random, grid: Grid) => {
 	const location = { x: 0, y: 0 };
 
 	while (true) {
-		location.x = getRandomInt(random, 0, grid.data.length - 1);
-		location.y = getRandomInt(random, 0, grid.data[0].data.length - 1);
+		location.x = getRandomInt(random, 0, grid.width - 1);
+		location.y = getRandomInt(random, 0, grid.height - 1);
 		if (isEmptyAt(grid, location)) {
 			break;
 		}
@@ -75,7 +70,19 @@ export const findEmptyLocation = (random: Random, grid: Grid) => {
 };
 
 export const makeGrid = (width: number, height: number) => {
-	const grid: Grid = { barrierCenters: [], barrierLocations: [], data: [] };
-	initGrid(grid, width, height);
+	const grid: Grid = {
+		numBarrierCenters: 0,
+
+		// space for 10 barrier centers, 1 barrier center = 32 bit so total = 10 * 32
+		barrierCenters: new Uint16Array(new SharedArrayBuffer(10 * 32)),
+		barrierLocations: [],
+
+		// each index holds a 16 bit number refering to an index in the peeps.individuals array
+		// index 0 means no indiv is present in the location
+		// index 0xffff means a barrier is present in the location
+		data: new Uint16Array(new SharedArrayBuffer(width * height * 2)),
+		width,
+		height,
+	};
 	return grid;
 };

@@ -1,5 +1,4 @@
-import type { Gene, Genome } from "./gene.js";
-import { geneToNumber } from "./gene.js";
+import type { Gene } from "./gene.js";
 import type { GenomComparisonMethod } from "./genomComparisonMethod.js";
 
 const countBits = (n: number) => {
@@ -10,15 +9,21 @@ const countBits = (n: number) => {
 
 export const genesMatch = (g1: Gene, g2: Gene) => {
 	return (
-		g1.sinkNum == g2.sinkNum &&
-		g1.sourceNum == g2.sourceNum &&
-		g1.sinkType == g2.sinkType &&
-		g1.sourceType == g2.sourceType &&
-		g1.weight == g2.weight
+		g1.sinkNum === g2.sinkNum &&
+		g1.sourceNum === g2.sourceNum &&
+		g1.sinkType === g2.sinkType &&
+		g1.sourceType === g2.sourceType &&
+		g1.weight === g2.weight
 	);
 };
 
-export const jaroWinklerDistance = (genome1: Genome, genome2: Genome) => {
+export const jaroWinklerDistance = (
+	genomes: Uint32Array,
+	genome1Offset: number,
+	genome1Length: number,
+	genome2Offset: number,
+	genome2Length: number
+) => {
 	const max = (a: number, b: number) => {
 		return a > b ? a : b;
 	};
@@ -27,10 +32,10 @@ export const jaroWinklerDistance = (genome1: Genome, genome2: Genome) => {
 	};
 
 	let i, j, l;
-	let m = 0,
-		t = 0;
-	let sl = genome1.length; // strlen(s);
-	let al = genome2.length; // strlen(a);
+	let m = 0;
+	let t = 0;
+	let sl = genome1Length;
+	let al = genome2Length;
 
 	const maxNumGenesToCompare = 20;
 	sl = min(maxNumGenesToCompare, sl); // optimization: approximate for long genomes
@@ -40,12 +45,17 @@ export const jaroWinklerDistance = (genome1: Genome, genome2: Genome) => {
 	const aflags = Array(al).fill(0);
 	const range = max(0, max(sl, al) / 2 - 1);
 
-	if (!sl || !al) return 0.0;
+	if (!sl || !al) {
+		return 0.0;
+	}
 
 	/* calculate matching characters */
 	for (i = 0; i < al; i++) {
 		for (j = max(i - range, 0), l = min(i + range + 1, sl); j < l; j++) {
-			if (genesMatch(genome2[i], genome1[j]) && !sflags[j]) {
+			if (
+				genomes[genome2Offset + i] === genomes[genome1Offset + j] &&
+				!sflags[j]
+			) {
 				sflags[j] = 1;
 				aflags[i] = 1;
 				m++;
@@ -54,7 +64,9 @@ export const jaroWinklerDistance = (genome1: Genome, genome2: Genome) => {
 		}
 	}
 
-	if (!m) return 0.0;
+	if (!m) {
+		return 0.0;
+	}
 
 	/* calculate character transpositions */
 	l = 0;
@@ -66,7 +78,9 @@ export const jaroWinklerDistance = (genome1: Genome, genome2: Genome) => {
 					break;
 				}
 			}
-			if (!genesMatch(genome2[i], genome1[j])) t++;
+			if (genomes[genome2Offset + i] !== genomes[genome1Offset + j]) {
+				t++;
+			}
 		}
 	}
 	t /= 2;
@@ -76,18 +90,22 @@ export const jaroWinklerDistance = (genome1: Genome, genome2: Genome) => {
 	return dw;
 };
 
-export const hammingDistanceBits = (genome1: Genome, genome2: Genome) => {
+export const hammingDistanceBits = (
+	genomes: Uint32Array,
+	genome1Offset: number,
+	genome1Length: number,
+	genome2Offset: number
+) => {
 	let p1 = 0;
 	let p2 = 0;
-	const numElements = genome1.length;
 	const bytesPerElement = 4;
-	const lengthBytes = numElements * bytesPerElement;
+	const lengthBytes = genome1Length * bytesPerElement;
 	const lengthBits = lengthBytes * 8;
 	let bitCount = 0;
 
-	for (let index = 0; index < genome1.length; ++p1, ++p2, ++index) {
+	for (let index = 0; index < genome1Length; ++p1, ++p2, ++index) {
 		bitCount += countBits(
-			geneToNumber(genome1[p1]) ^ geneToNumber(genome2[p2])
+			genomes[genome1Offset + p1] ^ genomes[genome2Offset + p2]
 		);
 	}
 
@@ -98,16 +116,22 @@ export const hammingDistanceBits = (genome1: Genome, genome2: Genome) => {
 	return 1.0 - Math.min(1.0, (2.0 * bitCount) / lengthBits);
 };
 
-export const hammingDistanceBytes = (genome1: Genome, genome2: Genome) => {
+export const hammingDistanceBytes = (
+	genomes: Uint32Array,
+	genome1Offset: number,
+	genome1Length: number,
+	genome2Offset: number
+) => {
 	let p1 = 0;
 	let p2 = 0;
-	const numElements = genome1.length;
 	const bytesPerElement = 4;
-	const lengthBytes = numElements * bytesPerElement;
+	const lengthBytes = genome1Length * bytesPerElement;
 	let byteCount = 0;
 
-	for (let index = 0; index < genome1.length; ++p1, ++p2, ++index) {
-		byteCount += Number(genome1[p1] === genome2[p2]);
+	for (let index = 0; index < genome1Length; ++p1, ++p2, ++index) {
+		byteCount += Number(
+			genomes[genome1Offset + p1] === genomes[genome2Offset + p2]
+		);
 	}
 
 	return byteCount / lengthBytes;
@@ -115,16 +139,25 @@ export const hammingDistanceBytes = (genome1: Genome, genome2: Genome) => {
 
 export const genomeSimilarity = (
 	genomeComparisonMethod: GenomComparisonMethod,
-	g1: Genome,
-	g2: Genome
+	genomes: Uint32Array,
+	g1Offset: number,
+	g1Length: number,
+	g2Offset: number,
+	g2Length: number
 ) => {
 	switch (genomeComparisonMethod) {
 		case 0:
-			return jaroWinklerDistance(g1, g2);
+			return jaroWinklerDistance(
+				genomes,
+				g1Offset,
+				g1Length,
+				g2Offset,
+				g2Length
+			);
 		case 1:
-			return hammingDistanceBits(g1, g2);
+			return hammingDistanceBits(genomes, g1Offset, g1Length, g2Offset);
 		case 2:
-			return hammingDistanceBytes(g1, g2);
+			return hammingDistanceBytes(genomes, g1Offset, g1Length, g2Offset);
 		default:
 			throw new Error(
 				"Missing implementation for genome comparison method: " +

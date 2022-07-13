@@ -28,7 +28,7 @@ export const makeSimulation = (options = defaultOptions) => {
 		generation: 0,
 		grid: makeGrid(options.sizeX, options.sizeY),
 		options,
-		peeps: makePeeps(),
+		peeps: makePeeps(options.population, options.genomeMaxLength),
 		random: mainRandom,
 		signals: makeSignal(options.signalLayers, options.sizeX, options.sizeY),
 	};

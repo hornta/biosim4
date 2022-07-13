@@ -29,6 +29,16 @@ export const geneToNumber = (gene: Gene) => {
 	);
 };
 
+export const numberToGene = (num: number): Gene => {
+	return {
+		sourceType: num & 0x1,
+		sourceNum: (num >> 1) & 0x7f,
+		sinkType: (num >> 8) & 0x1,
+		sinkNum: (num >> 9) & 0x7f,
+		weight: (num >> 16) & 0xffff,
+	};
+};
+
 export const weightAsFloat = (gene: Gene) => {
 	return gene.weight / 8192;
 };

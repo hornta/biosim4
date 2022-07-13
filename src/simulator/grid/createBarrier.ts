@@ -7,13 +7,14 @@ import { getRandomInt } from "../random.js";
 import type { Simulation } from "../simulation/simulator.js";
 
 export const createBarrier = (simulation: Simulation) => {
-	simulation.grid.barrierCenters = [];
+	simulation.grid.numBarrierCenters = 0;
+	simulation.grid.barrierCenters.fill(0);
 	simulation.grid.barrierLocations = [];
 
 	const drawBox = (minX: number, minY: number, maxX: number, maxY: number) => {
 		for (let x = minX; x <= maxX; ++x) {
 			for (let y = minY; y <= maxY; ++y) {
-				simulation.grid.data[x].data[y] = BARRIER;
+				simulation.grid.data[x * simulation.grid.width + y] = BARRIER;
 				simulation.grid.barrierLocations.push({ x, y });
 			}
 		}
@@ -31,7 +32,7 @@ export const createBarrier = (simulation: Simulation) => {
 
 			for (let x = minX; x <= maxX; ++x) {
 				for (let y = minY; y <= maxY; ++y) {
-					simulation.grid.data[x].data[y] = BARRIER;
+					simulation.grid.data[x * simulation.grid.width + y] = BARRIER;
 					simulation.grid.barrierLocations.push({ x, y });
 				}
 			}
@@ -54,13 +55,17 @@ export const createBarrier = (simulation: Simulation) => {
 					location: loc,
 					radius,
 					onVisit(loc) {
-						simulation.grid.data[loc.x].data[loc.y] = BARRIER;
+						simulation.grid.data[loc.x * simulation.grid.width + loc.y] =
+							BARRIER;
 						simulation.grid.barrierLocations.push(loc);
 					},
 					gridHeight: simulation.options.sizeY,
 					gridWidth: simulation.options.sizeX,
 				});
-				simulation.grid.barrierCenters.push(loc);
+				const index = simulation.grid.numBarrierCenters * 2;
+				simulation.grid.barrierCenters[index] = loc.x;
+				simulation.grid.barrierCenters[index + 1] = loc.y;
+				simulation.grid.numBarrierCenters++;
 			}
 			break;
 		}
@@ -99,13 +104,16 @@ export const createBarrier = (simulation: Simulation) => {
 				getCoordLength(subtractCoord(center1, center2)) < margin
 			);
 
-			simulation.grid.barrierCenters.push(center0);
+			const index = simulation.grid.numBarrierCenters * 2;
+			simulation.grid.barrierCenters[index] = center0.x;
+			simulation.grid.barrierCenters[index + 1] = center0.y;
+			simulation.grid.numBarrierCenters++;
 
 			visitNeighbourhood({
 				location: center0,
 				radius,
 				onVisit: (loc) => {
-					simulation.grid.data[loc.x].data[loc.y] = BARRIER;
+					simulation.grid.data[loc.x * simulation.grid.width + loc.y] = BARRIER;
 					simulation.grid.barrierLocations.push(loc);
 				},
 				gridHeight: simulation.options.sizeY,
@@ -121,7 +129,7 @@ export const createBarrier = (simulation: Simulation) => {
 			const maxY = minY + simulation.options.sizeY / 2;
 			for (let x = minX; x <= maxX; ++x) {
 				for (let y = minY; y <= maxY; ++y) {
-					simulation.grid.data[x].data[y] = BARRIER;
+					simulation.grid.data[x * simulation.grid.width + y] = BARRIER;
 					simulation.grid.barrierLocations.push({ x, y });
 				}
 			}
@@ -140,7 +148,7 @@ export const createBarrier = (simulation: Simulation) => {
 			const maxY = minY + simulation.options.sizeY / 2;
 			for (let x = minX; x <= maxX; ++x) {
 				for (let y = minY; y <= maxY; ++y) {
-					simulation.grid.data[x].data[y] = BARRIER;
+					simulation.grid.data[x * simulation.grid.width + y] = BARRIER;
 					simulation.grid.barrierLocations.push({ x, y });
 				}
 			}
@@ -175,6 +183,6 @@ export const createBarrier = (simulation: Simulation) => {
 		}
 
 		default:
-			throw new Error("Missim");
+			throw new Error("Missing barrier implementation");
 	}
 };

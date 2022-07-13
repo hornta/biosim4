@@ -3,6 +3,7 @@ import { coordsAreIdentical, getCoordLength, subtractCoord } from "../coord.js";
 import { isBorder, isInBounds, isOccupiedAt } from "../grid/grid.js";
 import type { Indiv } from "../indiv.js";
 import { visitNeighbourhood } from "../indiv.js";
+import { PeepVitalStatus } from "../peeps.js";
 
 function bitCount32(n: number) {
 	n = n - ((n >> 1) & 0x55555555);
@@ -20,19 +21,18 @@ function bitCount(n: number) {
 }
 
 export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
-	if (!indiv.alive) {
+	if (indiv.simulation.peeps.peepsAlive[indiv.index] === PeepVitalStatus.Dead) {
 		return [false, 0] as const;
 	}
 
-	const p = indiv.simulation.options;
-	const grid = indiv.simulation.grid;
+	const { options, grid } = indiv.simulation;
 
 	switch (challenge) {
 		// Survivors are those inside the circular area defined by
 		// safeCenter and radius
 		case Challenge.Circle: {
-			const safeCenter = { x: p.sizeX / 4.0, y: p.sizeY / 4.0 };
-			const radius = p.sizeX / 4.0;
+			const safeCenter = { x: options.sizeX / 4.0, y: options.sizeY / 4.0 };
+			const radius = options.sizeX / 4.0;
 
 			const offset = subtractCoord(safeCenter, indiv.location);
 			const distance = getCoordLength(offset);
@@ -43,19 +43,19 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 
 		// Survivors are all those on the right side of the arena
 		case Challenge.RightHalf:
-			return indiv.location.x > p.sizeX / 2
+			return indiv.location.x > options.sizeX / 2
 				? ([true, 1.0] as const)
 				: ([false, 0.0] as const);
 
 		// Survivors are all those on the right quarter of the arena
 		case Challenge.RightQuarter:
-			return indiv.location.x > p.sizeX / 2 + p.sizeX / 4
+			return indiv.location.x > options.sizeX / 2 + options.sizeX / 4
 				? ([true, 1.0] as const)
 				: ([false, 0.0] as const);
 
 		// Survivors are all those on the left eighth of the arena
 		case Challenge.LeftEight:
-			return indiv.location.x < p.sizeX / 8
+			return indiv.location.x < options.sizeX / 8
 				? ([true, 1.0] as const)
 				: ([false, 0.0] as const);
 
@@ -80,8 +80,8 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 						++count;
 					}
 				},
-				gridHeight: p.sizeY,
-				gridWidth: p.sizeX,
+				gridHeight: options.sizeY,
+				gridWidth: options.sizeX,
 			});
 			if (count >= minNeighbors && count <= maxNeighbors) {
 				return [true, 1.0] as const;
@@ -93,8 +93,8 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// Survivors are those within the specified radius of the center. The score
 		// is linearly weighted by distance from the center.
 		case Challenge.CenterWeighted: {
-			const safeCenter = { x: p.sizeX / 2.0, y: p.sizeY / 2.0 };
-			const radius = p.sizeX / 3.0;
+			const safeCenter = { x: options.sizeX / 2.0, y: options.sizeY / 2.0 };
+			const radius = options.sizeX / 3.0;
 
 			const offset = subtractCoord(safeCenter, indiv.location);
 			const distance = getCoordLength(offset);
@@ -105,8 +105,8 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 
 		// Survivors are those within the specified radius of the center
 		case Challenge.CenterUnweighted: {
-			const safeCenter = { x: p.sizeX / 2.0, y: p.sizeY / 2.0 };
-			const radius = p.sizeX / 3.0;
+			const safeCenter = { x: options.sizeX / 2.0, y: options.sizeY / 2.0 };
+			const radius = options.sizeX / 3.0;
 
 			const offset = subtractCoord(safeCenter, indiv.location);
 			const distance = getCoordLength(offset);
@@ -119,8 +119,8 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// the specified number of neighbors in the specified inner radius.
 		// The score is not weighted by distance from the center.
 		case Challenge.CenterSparse: {
-			const safeCenter = { x: p.sizeX / 2.0, y: p.sizeY / 2.0 };
-			const outerRadius = p.sizeX / 4.0;
+			const safeCenter = { x: options.sizeX / 2.0, y: options.sizeY / 2.0 };
+			const outerRadius = options.sizeX / 4.0;
 			const innerRadius = 1.5;
 			const minNeighbors = 5; // includes self
 			const maxNeighbors = 8;
@@ -136,8 +136,8 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 					onVisit(loc2) {
 						if (isOccupiedAt(grid, loc2)) ++count;
 					},
-					gridHeight: p.sizeY,
-					gridWidth: p.sizeX,
+					gridHeight: options.sizeY,
+					gridWidth: options.sizeX,
 				});
 				if (count >= minNeighbors && count <= maxNeighbors) {
 					return [true, 1.0] as const;
@@ -149,7 +149,7 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// Survivors are those within the specified radius of any corner.
 		// Assumes square arena.
 		case Challenge.Corner: {
-			const radius = p.sizeX / 8.0;
+			const radius = options.sizeX / 8.0;
 
 			let distance = getCoordLength(
 				subtractCoord({ x: 0, y: 0 }, indiv.location)
@@ -158,19 +158,22 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 				return [true, 1.0] as const;
 			}
 			distance = getCoordLength(
-				subtractCoord({ x: 0, y: p.sizeY - 1 }, indiv.location)
+				subtractCoord({ x: 0, y: options.sizeY - 1 }, indiv.location)
 			);
 			if (distance <= radius) {
 				return [true, 1.0] as const;
 			}
 			distance = getCoordLength(
-				subtractCoord({ x: p.sizeX - 1, y: 0 }, indiv.location)
+				subtractCoord({ x: options.sizeX - 1, y: 0 }, indiv.location)
 			);
 			if (distance <= radius) {
 				return [true, 1.0] as const;
 			}
 			distance = getCoordLength(
-				subtractCoord({ x: p.sizeX - 1, y: p.sizeY - 1 }, indiv.location)
+				subtractCoord(
+					{ x: options.sizeX - 1, y: options.sizeY - 1 },
+					indiv.location
+				)
 			);
 			if (distance <= radius) {
 				return [true, 1.0] as const;
@@ -181,7 +184,7 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// Survivors are those within the specified radius of any corner. The score
 		// is linearly weighted by distance from the corner point.
 		case Challenge.CornerWeighted: {
-			const radius = p.sizeX / 4.0;
+			const radius = options.sizeX / 4.0;
 
 			let distance = getCoordLength(
 				subtractCoord({ x: 0, y: 0 }, indiv.location)
@@ -190,19 +193,22 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 				return [true, (radius - distance) / radius] as const;
 			}
 			distance = getCoordLength(
-				subtractCoord({ x: 0, y: p.sizeY - 1 }, indiv.location)
+				subtractCoord({ x: 0, y: options.sizeY - 1 }, indiv.location)
 			);
 			if (distance <= radius) {
 				return [true, (radius - distance) / radius] as const;
 			}
 			distance = getCoordLength(
-				subtractCoord({ x: p.sizeX - 1, y: 0 }, indiv.location)
+				subtractCoord({ x: options.sizeX - 1, y: 0 }, indiv.location)
 			);
 			if (distance <= radius) {
 				return [true, (radius - distance) / radius] as const;
 			}
 			distance = getCoordLength(
-				subtractCoord({ x: p.sizeX - 1, y: p.sizeY - 1 }, indiv.location)
+				subtractCoord(
+					{ x: options.sizeX - 1, y: options.sizeY - 1 },
+					indiv.location
+				)
 			);
 			if (distance <= radius) {
 				return [true, (radius - distance) / radius] as const;
@@ -220,9 +226,9 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		case Challenge.AginstAnyWall: {
 			const onEdge =
 				indiv.location.x == 0 ||
-				indiv.location.x == p.sizeX - 1 ||
+				indiv.location.x == options.sizeX - 1 ||
 				indiv.location.y == 0 ||
-				indiv.location.y == p.sizeY - 1;
+				indiv.location.y == options.sizeY - 1;
 
 			if (onEdge) {
 				return [true, 1.0] as const;
@@ -249,24 +255,29 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 			let distance = getCoordLength(
 				subtractCoord(indiv.location, indiv.birthLocation)
 			);
-			distance = distance / Math.max(p.sizeX, p.sizeY);
+			distance = distance / Math.max(options.sizeX, options.sizeY);
 			return [true, distance] as const;
 		}
 
 		// Survivors are all those on the left or right eighths of the arena
 		case Challenge.EastWestEights:
-			return indiv.location.x < p.sizeX / 8 ||
-				indiv.location.x >= p.sizeX - p.sizeX / 8
+			return indiv.location.x < options.sizeX / 8 ||
+				indiv.location.x >= options.sizeX - options.sizeX / 8
 				? ([true, 1.0] as const)
 				: ([false, 0.0] as const);
 
 		// Survivors are those within radius of any barrier center. Weighted by distance.
 		case Challenge.NearBarrier: {
-			const radius = p.sizeX / 2;
+			const radius = options.sizeX / 2;
 
 			let minDistance = 1e8;
-			for (const center of grid.barrierCenters) {
-				const distance = getCoordLength(subtractCoord(indiv.location, center));
+			for (let i = 0; i < grid.numBarrierCenters; ++i) {
+				const distance = getCoordLength(
+					subtractCoord(indiv.location, {
+						x: grid.barrierCenters[i * 2],
+						y: grid.barrierCenters[i * 2 + 1],
+					})
+				);
 				if (distance < minDistance) {
 					minDistance = distance;
 				}
@@ -282,9 +293,9 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		case Challenge.Pairs: {
 			const onEdge =
 				indiv.location.x == 0 ||
-				indiv.location.x == p.sizeX - 1 ||
+				indiv.location.x == options.sizeX - 1 ||
 				indiv.location.y == 0 ||
-				indiv.location.y == p.sizeY - 1;
+				indiv.location.y == options.sizeY - 1;
 
 			if (onEdge) {
 				return [false, 0.0] as const;
@@ -350,12 +361,15 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// Survivors are all those within the specified radius of the NE corner
 		case Challenge.AltruismSacrifice: {
 			//float radius = p.sizeX / 3.0; // in 128^2 world, holds 1429 agents
-			const radius = p.sizeX / 4.0; // in 128^2 world, holds 804 agents
+			const radius = options.sizeX / 4.0; // in 128^2 world, holds 804 agents
 			//float radius = p.sizeX / 5.0; // in 128^2 world, holds 514 agents
 
 			const distance = getCoordLength(
 				subtractCoord(
-					{ x: p.sizeX - p.sizeX / 4, y: p.sizeY - p.sizeY / 4 },
+					{
+						x: options.sizeX - options.sizeX / 4,
+						y: options.sizeY - options.sizeY / 4,
+					},
 					indiv.location
 				)
 			);
@@ -370,8 +384,8 @@ export const passedSurvivalCriterion = (indiv: Indiv, challenge: Challenge) => {
 		// Survivors are those inside the circular area defined by
 		// safeCenter and radius
 		case Challenge.Altruism: {
-			const safeCenter = { x: p.sizeX / 4.0, y: p.sizeY / 4.0 };
-			const radius = p.sizeX / 4.0; // in a 128^2 world, holds 3216
+			const safeCenter = { x: options.sizeX / 4.0, y: options.sizeY / 4.0 };
+			const radius = options.sizeX / 4.0; // in a 128^2 world, holds 3216
 
 			const offset = subtractCoord(safeCenter, indiv.location);
 			const distance = getCoordLength(offset);

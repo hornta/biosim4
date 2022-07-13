@@ -6,12 +6,12 @@ import {
 	rotate90DegreesClockWise,
 	rotate90DegreesCounterClockWise,
 } from "../dir.js";
+import type { Grid } from "../grid/grid.js";
 import { isEmptyAt, isInBounds, isOccupiedAt } from "../grid/grid.js";
 import type { Indiv } from "../indiv.js";
-import { queueForDeath, queueForMove } from "../peeps.js";
 import { RANDOM_UINT_MAX } from "../random.js";
 import { SensorAction } from "../neuralNet/sensorActions.js";
-import { increment } from "../signals/signal.js";
+import type { SimulatorOptions } from "./simulatorOptions.js";
 
 const prob2bool = (random: Random, factor: number) => {
 	return random.uint32() / RANDOM_UINT_MAX < factor;
@@ -24,7 +24,32 @@ const responseCurve = (responsivenessCurveKFactor: number, r: number) => {
 	);
 };
 
-export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
+export enum ActionOutputType {
+	Responsiveness,
+	OscilliatorPeriod,
+	LongProbeDistance,
+	Signal0,
+	Kill,
+	Move,
+}
+
+export interface ActionOutput {
+	action: ActionOutputType;
+	indiv: number;
+	value: number;
+}
+
+export type ActionOutputs = ActionOutput[];
+
+export const executeActions = (
+	indiv: Omit<Indiv, "simulation">,
+	actionLevels: number[],
+	random: Random,
+	options: SimulatorOptions,
+	grid: Grid
+) => {
+	const outputs: ActionOutputs = [];
+
 	// todo: allow disabling actions
 	const isEnabled = (action: SensorAction) => {
 		action;
@@ -34,11 +59,15 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 	if (isEnabled(SensorAction.SetResponsiveness)) {
 		let level = actionLevels[SensorAction.SetResponsiveness];
 		level = (Math.tanh(level) + 1) / 2;
-		indiv.responsiveness = level;
+		outputs.push({
+			action: ActionOutputType.Responsiveness,
+			indiv: indiv.index,
+			value: level,
+		});
 	}
 
 	const responsivenessAdjusted = responseCurve(
-		indiv.simulation.options.responsivenessCurveKFactor,
+		options.responsivenessCurveKFactor,
 		indiv.responsiveness
 	);
 
@@ -49,7 +78,11 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 		const periodf = actionLevels[SensorAction.SetOscilliatorPeriod];
 		const newPeriodf01 = (Math.tanh(periodf) + 1.0) / 2.0; // convert to 0.0..1.0
 		const newPeriod = 1 + Math.floor(1.5 + Math.exp(7.0 * newPeriodf01));
-		indiv.oscilliatePeriod = newPeriod;
+		outputs.push({
+			action: ActionOutputType.OscilliatorPeriod,
+			indiv: indiv.index,
+			value: newPeriod,
+		});
 	}
 
 	// Set longProbeDistance - convert action level to 1..maxLongProbeDistance.
@@ -60,7 +93,11 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 		let level = actionLevels[SensorAction.SetLongProbeDistance];
 		level = (Math.tanh(level) + 1.0) / 2.0; // convert to 0.0..1.0
 		level = 1 + level * maxLongProbeDistance;
-		indiv.longProbeDistance = level;
+		outputs.push({
+			action: ActionOutputType.LongProbeDistance,
+			indiv: indiv.index,
+			value: level,
+		});
 	}
 
 	// Emit signal0 - if this action value is below a threshold, nothing emitted.
@@ -73,36 +110,35 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 		let level = actionLevels[SensorAction.EmitSignal0];
 		level = (Math.tanh(level) + 1.0) / 2.0; // convert to 0.0..1.0
 		level *= responsivenessAdjusted;
-		if (level > emitThreshold && prob2bool(indiv.simulation.random, level)) {
-			increment(indiv, 0);
+		if (level > emitThreshold && prob2bool(random, level)) {
+			outputs.push({
+				action: ActionOutputType.Signal0,
+				indiv: indiv.index,
+				value: 0,
+			});
 		}
 	}
 
 	// Kill forward -- if this action value is > threshold, value is converted to probability
 	// of an attempted murder. Probabilities under the threshold are considered 0.0.
 	// If this action neuron is enabled but not driven, the neighbors are safe.
-	if (
-		isEnabled(SensorAction.KillForward) &&
-		indiv.simulation.options.killEnable
-	) {
+	if (isEnabled(SensorAction.KillForward) && options.killEnable) {
 		const killThreshold = 0.5; // 0.0..1.0; 0.5 is midlevel
 		let level = actionLevels[SensorAction.KillForward];
 		level = (Math.tanh(level) + 1.0) / 2.0; // convert to 0.0..1.0
 		level *= responsivenessAdjusted;
-		if (level > killThreshold && prob2bool(indiv.simulation.random, level)) {
+		if (level > killThreshold && prob2bool(random, level)) {
 			const otherLoc = addDirectionToCoord(
 				indiv.location,
 				indiv.lastMoveDirection
 			);
-			if (
-				isInBounds(indiv.simulation.grid, otherLoc) &&
-				isOccupiedAt(indiv.simulation.grid, otherLoc)
-			) {
-				const indiv2 =
-					indiv.simulation.peeps.individuals[
-						indiv.simulation.grid.data[otherLoc.x].data[otherLoc.y]
-					];
-				queueForDeath(indiv.simulation.peeps, indiv2);
+			if (isInBounds(grid, otherLoc) && isOccupiedAt(grid, otherLoc)) {
+				const targetIndex = grid.data[otherLoc.x * grid.width + otherLoc.y];
+				outputs.push({
+					action: ActionOutputType.Kill,
+					indiv: indiv.index,
+					value: targetIndex,
+				});
 			}
 		}
 	}
@@ -184,9 +220,7 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 
 	if (isEnabled(SensorAction.MoveRandom)) {
 		level = actionLevels[SensorAction.MoveRandom];
-		offset = directionAsNormalizedCoord(
-			randomDirection8(indiv.simulation.random)
-		);
+		offset = directionAsNormalizedCoord(randomDirection8(random));
 		moveX += offset.x * level;
 		moveY += offset.y * level;
 	}
@@ -199,8 +233,8 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 	moveY *= responsivenessAdjusted;
 
 	// The probability of movement along each axis is the absolute value
-	const probX = prob2bool(indiv.simulation.random, Math.abs(moveX)); // convert abs(level) to 0 or 1
-	const probY = prob2bool(indiv.simulation.random, Math.abs(moveY)); // convert abs(level) to 0 or 1
+	const probX = prob2bool(random, Math.abs(moveX)); // convert abs(level) to 0 or 1
+	const probY = prob2bool(random, Math.abs(moveY)); // convert abs(level) to 0 or 1
 
 	// The direction of movement (if any) along each axis is the sign
 	const signumX = moveX < 0.0 ? -1 : 1;
@@ -214,10 +248,13 @@ export const executeActions = (indiv: Indiv, actionLevels: number[]) => {
 
 	// Move there if it's a valid location
 	const newLoc = addCoord(indiv.location, movementOffset);
-	if (
-		isInBounds(indiv.simulation.grid, newLoc) &&
-		isEmptyAt(indiv.simulation.grid, newLoc)
-	) {
-		queueForMove(indiv.simulation.peeps, indiv, newLoc);
+	if (isInBounds(grid, newLoc) && isEmptyAt(grid, newLoc)) {
+		outputs.push({
+			action: ActionOutputType.Move,
+			indiv: indiv.index,
+			value: newLoc.x | (newLoc.y << 16),
+		});
 	}
+
+	return outputs;
 };

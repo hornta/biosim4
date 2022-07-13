@@ -1,6 +1,11 @@
 import { Challenge } from "../challenge.js";
 import { getCoordLength, subtractCoord } from "../coord.js";
-import { drainDeathQueue, drainMoveQueue, queueForDeath } from "../peeps.js";
+import {
+	drainDeathQueue,
+	drainMoveQueue,
+	PeepVitalStatus,
+	queueForDeath,
+} from "../peeps.js";
 import { RANDOM_UINT_MAX } from "../random.js";
 import { fadeSignal } from "../signals/signal.js";
 import type { Simulation } from "./simulator.js";
@@ -17,14 +22,14 @@ export const handleEndOfSimulation = (
 
 		for (let index = 1; index <= simulation.options.population; ++index) {
 			const indiv = simulation.peeps.individuals[index];
-			if (indiv.alive) {
+			if (simulation.peeps.peepsAlive[index] === PeepVitalStatus.Alive) {
 				const distanceFromRadioactiveWall = Math.abs(
 					indiv.location.x - radioactiveX
 				);
 				if (distanceFromRadioactiveWall < simulation.options.sizeX / 2) {
 					const chanceOfDeath = 1.0 / distanceFromRadioactiveWall;
 					if (simulation.random.uint32() / RANDOM_UINT_MAX < chanceOfDeath) {
-						queueForDeath(simulation.peeps, indiv);
+						queueForDeath(simulation.peeps, index);
 					}
 				}
 			}
@@ -53,12 +58,15 @@ export const handleEndOfSimulation = (
 		for (let index = 1; index <= simulation.options.population; ++index) {
 			// index 0 is reserved
 			const indiv = simulation.peeps.individuals[index];
-			for (let n = 0; n < simulation.grid.barrierCenters.length; ++n) {
+			for (let n = 0; n < simulation.grid.numBarrierCenters; ++n) {
 				const bit = 1 << n;
 				if ((indiv.challengeBits & bit) == 0) {
 					if (
 						getCoordLength(
-							subtractCoord(indiv.location, simulation.grid.barrierCenters[n])
+							subtractCoord(indiv.location, {
+								x: simulation.grid.barrierCenters[n * 2],
+								y: simulation.grid.barrierCenters[n * 2 + 1],
+							})
 						) <= radius
 					) {
 						indiv.challengeBits |= bit;

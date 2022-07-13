@@ -23,6 +23,7 @@ const conversion = [
 	Compass.North,
 ] as const;
 
+// 16 bit per component
 export interface Coord {
 	x: number;
 	y: number;

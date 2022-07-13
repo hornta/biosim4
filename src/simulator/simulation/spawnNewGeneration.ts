@@ -1,6 +1,8 @@
 import { Challenge } from "../challenge.js";
 import { createBarrier } from "../grid/createBarrier.js";
 import type { Genome } from "../neuralNet/gene.js";
+import { geneToNumber } from "../neuralNet/gene.js";
+import { numberToGene } from "../neuralNet/gene.js";
 import { makeRandomGenome } from "../neuralNet/gene.js";
 import { generateChildGenome } from "../neuralNet/generateChildGenome.js";
 import { genomeSimilarity } from "../neuralNet/genomCompare.js";
@@ -26,15 +28,25 @@ export const initializeGeneration = (options: InitializeGenerationOptions) => {
 
 	options.simulation.peeps.individuals = [{} as Indiv];
 	for (let index = 1; index <= options.simulation.options.population; ++index) {
+		const genome = options.isGeneration0
+			? makeRandomGenome(options.simulation)
+			: generateChildGenome(options.simulation, options.parentGenomes);
 		const indiv = makeIndiv(
 			index,
 			findEmptyLocation(options.simulation.random, options.simulation.grid),
-			options.isGeneration0
-				? makeRandomGenome(options.simulation)
-				: generateChildGenome(options.simulation, options.parentGenomes),
+			genome,
 			options.simulation
 		);
 		options.simulation.peeps.individuals.push(indiv);
+		options.simulation.peeps.peepsAlive[index] = 1;
+
+		let genomeIndex = index - 1;
+		for (const gene of genome) {
+			options.simulation.peeps.peepsGenomes[genomeIndex] = geneToNumber(gene);
+			genomeIndex += 1;
+		}
+
+		options.simulation.peeps.peepsGenomeLengths[index - 1] = genome.length;
 	}
 };
 
@@ -126,13 +138,17 @@ export const spawnNewGeneration = (simulation: Simulation) => {
 						for (let count = 0; count < parents.length; ++count) {
 							const possibleParent =
 								parents[(startIndex + count) % parents.length];
-							const g1 = simulation.peeps.individuals[sacrificedIndex].genome;
-							const g2 =
-								simulation.peeps.individuals[possibleParent.index].genome;
+							const g1GenomeLength =
+								simulation.peeps.peepsGenomeLengths[sacrificedIndex - 1];
+							const g2GenomeLength =
+								simulation.peeps.peepsGenomeLengths[possibleParent.index - 1];
 							const similarity = genomeSimilarity(
 								simulation.options.genomeComparisonMethod,
-								g1,
-								g2
+								simulation.peeps.peepsGenomes,
+								sacrificedIndex - 1,
+								g1GenomeLength,
+								possibleParent.index - 1,
+								g2GenomeLength
 							);
 							if (similarity >= threshold) {
 								survivingKin.push(possibleParent);
@@ -161,7 +177,17 @@ export const spawnNewGeneration = (simulation: Simulation) => {
 	// Assemble a list of all the parent genomes. These will be ordered by their
 	// scores if the parents[] container was sorted by score
 	for (const parent of parents) {
-		parentGenomes.push(simulation.peeps.individuals[parent.index].genome);
+		const parentGenomeLength =
+			simulation.peeps.peepsGenomeLengths[parent.index - 1];
+		const parentNumericGenome = Array.from(
+			simulation.peeps.peepsGenomes.slice(
+				parent.index - 1,
+				parent.index - 1 + parentGenomeLength
+			)
+		);
+		parentGenomes.push(
+			parentNumericGenome.map((number) => numberToGene(number))
+		);
 	}
 
 	// appendEpochLog(generation, parentGenomes.size(), murderCount);

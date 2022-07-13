@@ -31,8 +31,8 @@ export interface SimulatorOptions {
 }
 
 export const validateOptions = (options: SimulatorOptions) => {
-	if (options.population < 0) {
-		throw new Error("`population` can't be negative");
+	if (options.population < 1 || options.population > 0xffff - 1) {
+		throw new Error("`population` must be between 1 and 65534");
 	}
 
 	if (options.stepsPerGeneration < 0) {
